@@ -27,6 +27,12 @@ class US_dnn:
     self.weight['de_b2'] = bias([6],'de_b2')
     self.weight['de_b3'] = bias([8],'de_b3')
 
+    if load:
+        saver = tf.train.Saver()
+        with tf.Session() as sess:
+            saver.restore(sess, "/tmp/US_dnn.ckpt")
+            print("Model restored.")
+
   def encoder(self, en_input):
     layer1 = dnn(en_input, self.weight['en_w1'],self.weight['en_b1'])
     layer2 = dnn(layer1,   self.weight['en_w2'],self.weight['en_b2'])
@@ -61,6 +67,7 @@ class US_dnn:
     *3. valid data
     *4. save parameter(s) w/ best record
     '''
+    best_record = 9999
     x = tf.placeholder(tf.float32,[None,8])
     y_hat = tf.placeholder(tf.float32,[None, 8])
 
@@ -70,6 +77,7 @@ class US_dnn:
     loss = tf.reduce_sum(tf.square(tf.sub(de_op, y_hat)))
     optimizer = tf.train.RMSPropOptimizer(lr,0.9,0.9,1e-5).minimize(loss)
 
+    saver = tf.train.Saver()
     with tf.Session() as sess:
         init = tf.initialize_all_variables()
         sess.run(init)
@@ -90,6 +98,9 @@ class US_dnn:
                                             feed_dict={x:batch_xs,
                                                        y_hat:self.noise(batch_xs)})
             print 'Epoch: %04d, Loss: %.9f' %(epoch+1,cost)
+            if cost < best_record * 0.8:
+                save_path = saver.save(sess, "/tmp/US_dnn.ckpt")
+                print("Model saved in file: %s" % save_path)
             #pp.pprint(batch_xs)
             #pp.pprint(output)
     print 'Total time: ', time.time()-start_time
