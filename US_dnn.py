@@ -63,7 +63,7 @@ class US_dnn:
     2. init/sess
     3. valid data
     *4. save 'specific' parameter(s) w/ best record
-    +5. load parameter(s)
+    5. load parameter(s)
     '''
     best_record = 9999
     valid_step = 1
