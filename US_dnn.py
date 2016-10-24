@@ -11,19 +11,36 @@ class US_dnn:
   '''
   def __init__(self, ):
     self.weight, self.bias = {}, {}
-    self.weight['en_w1'] = weight([8,6],'en_w1')
-    self.weight['en_w2'] = weight([6,4],'en_w2')
-    self.weight['en_w3'] = weight([4,2],'en_w3')
-    self.weight['en_b1'] = bias([6],'en_b1')
-    self.weight['en_b2'] = bias([4],'en_b2')
-    self.weight['en_b3'] = bias([2],'en_b3')
+    with tf.name_scope('weights'):
+        # declare variable
+        self.weight['en_w1'] = weight([8,6],'en_w1')
+        self.weight['en_w2'] = weight([6,4],'en_w2')
+        self.weight['en_w3'] = weight([4,2],'en_w3')
+        self.weight['en_b1'] = bias([6],'en_b1')
+        self.weight['en_b2'] = bias([4],'en_b2')
+        self.weight['en_b3'] = bias([2],'en_b3')
 
-    self.weight['de_w1'] = tf.transpose(self.weight['en_w3'])
-    self.weight['de_w2'] = tf.transpose(self.weight['en_w2'])
-    self.weight['de_w3'] = tf.transpose(self.weight['en_w1'])
-    self.weight['de_b1'] = bias([4],'de_b1')
-    self.weight['de_b2'] = bias([6],'de_b2')
-    self.weight['de_b3'] = bias([8],'de_b3')
+        self.weight['de_w1'] = tf.transpose(self.weight['en_w3'])
+        self.weight['de_w2'] = tf.transpose(self.weight['en_w2'])
+        self.weight['de_w3'] = tf.transpose(self.weight['en_w1'])
+        self.weight['de_b1'] = bias([4],'de_b1')
+        self.weight['de_b2'] = bias([6],'de_b2')
+        self.weight['de_b3'] = bias([8],'de_b3')
+
+        # declare tensorboard variable
+        self.variable_summaries(self.weight['en_w1'], 'en_w1')
+        self.variable_summaries(self.weight['en_w2'], 'en_w2')
+        self.variable_summaries(self.weight['en_w3'], 'en_w3')
+        self.variable_summaries(self.weight['en_b1'], 'en_b1')
+        self.variable_summaries(self.weight['en_b2'], 'en_b2')
+        self.variable_summaries(self.weight['en_b3'], 'en_b3')
+
+        self.variable_summaries(self.weight['de_w1'], 'de_w1')
+        self.variable_summaries(self.weight['de_w2'], 'de_w2')
+        self.variable_summaries(self.weight['de_w3'], 'de_w3')
+        self.variable_summaries(self.weight['de_b1'], 'de_b1')
+        self.variable_summaries(self.weight['de_b2'], 'de_b2')
+        self.variable_summaries(self.weight['de_b3'], 'de_b3')
 
   def encoder(self, en_input):
     layer1 = dnn(en_input, self.weight['en_w1'],self.weight['en_b1'])
@@ -57,6 +74,18 @@ class US_dnn:
       print name
       print self.weight[name].eval()
 
+  def variable_summaries(self,var, name):
+    """Attach a lot of summaries to a Tensor."""
+    with tf.name_scope('summaries'):
+        mean = tf.reduce_mean(var)
+        tf.scalar_summary('mean/' + name, mean)
+    with tf.name_scope('stddev'):
+        stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+        tf.scalar_summary('stddev/' + name, stddev)
+        tf.scalar_summary('max/' + name, tf.reduce_max(var))
+        tf.scalar_summary('min/' + name, tf.reduce_min(var))
+        tf.histogram_summary(name, var)
+
   def run(self, data, valid, lr=0.1, ep=10, mini_bs=1, load=False, selftest=False): # ongoing
     '''
     1. connect model
@@ -64,23 +93,33 @@ class US_dnn:
     3. valid data
     *4. save 'specific' parameter(s) w/ best record
     5. load parameter(s)
+    *6. tensorboard
     '''
     best_record = 9999
     valid_step = 1
+    logs_path = 'logs/'
     x = tf.placeholder(tf.float32,[None,8])
     y_hat = tf.placeholder(tf.float32,[None, 8])
 
-    en_op = self.encoder(x)
-    de_op = self.decoder(en_op)
+    with tf.name_scope('Model'):
+        en_op = self.encoder(x)
+        de_op = self.decoder(en_op)
 
-    loss = tf.reduce_sum(tf.square(tf.sub(de_op, y_hat)))
-    optimizer = tf.train.RMSPropOptimizer(lr,0.9,0.9,1e-5).minimize(loss)
+    with tf.name_scope('Loss'):
+        loss = tf.reduce_sum(tf.square(tf.sub(de_op, y_hat)))
+
+    with tf.name_scope('RMSProp'):
+        optimizer = tf.train.RMSPropOptimizer(lr,0.9,0.9,1e-5).minimize(loss)
+
+    tf.scalar_summary("loss", loss)
+    merged_summary_op = tf.merge_all_summaries()
 
     self.saver = tf.train.Saver()
 
     with tf.Session() as sess:
         init = tf.initialize_all_variables()
         sess.run(init)
+        summary_writer = tf.train.SummaryWriter(logs_path, graph=tf.get_default_graph())
         if load:
             if not os.path.isfile('tmp/US_dnn.ckpt'):
                 print 'There is no saved parameter(s)! The program will assign random weight!'
@@ -110,9 +149,10 @@ class US_dnn:
 
             for i in range(data.shape[0]/mini_bs):
                 batch_xs = self.random_mini_batch(data,mini_bs)
-                _, output, cost = sess.run([optimizer, de_op, loss],
-                                            feed_dict={x:batch_xs,
-                                                       y_hat:self.noise(batch_xs)})
+                _, output, cost, summary = sess.run([optimizer, de_op, loss, merged_summary_op],
+                                                     feed_dict={x:batch_xs,
+                                                                y_hat:self.noise(batch_xs)})
+                summary_writer.add_summary(summary,epoch*(data.shape[0]/mini_bs)+i)
 
             if (epoch+1) % valid_step == 0:
                 valid_op, valid_cost = sess.run([de_op,loss],feed_dict={x:valid,y_hat:valid})
