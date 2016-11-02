@@ -40,6 +40,9 @@ class panel():
 
         loss_US = tf.reduce_sum(tf.square(tf.sub(y3, US_y_hat)))
         loss_FC = tf.reduce_sum(tf.square(tf.sub(y4, FC_y_hat)))
+        loss_net = tf.reduce_sum(tf.square(tf.sub(y2, FC_y_hat)))
+
+        optimizer = tf.train.RMSPropOptimizer(0.1,0.9,0.9,1e-5).minimize(loss_net)
 
         self.saver_US = tf.train.Saver(self.US.paraList)
         self.saver_FC = tf.train.Saver(self.FC.paraList)
@@ -54,6 +57,18 @@ class panel():
             valid_US = np.array([3,2,3,4,5,6,7,8]).reshape(1,8)
             valid_FC = np.array([3,2]).reshape(1,2)
             valid_FC_label = np.array([0,1]).reshape(1,2)
+
+            print sess.run(loss_US,feed_dict={US_x:valid_US,
+                                         US_y_hat:valid_US})
+            print sess.run(loss_FC,feed_dict={FC_x:valid_FC,
+                                         FC_y_hat:valid_FC_label})
+            # training
+            _ = sess.run(optimizer,feed_dict={US_x:valid_US,
+                                         FC_y_hat:valid_FC_label})
+
+            raw_input('PAUSE')
+            self.saver_US.save(sess, "tmp/US_dnn.ckpt")
+            self.saver_FC.save(sess, "tmp/FC.ckpt")
 
             print sess.run(loss_US,feed_dict={US_x:valid_US,
                                          US_y_hat:valid_US})
