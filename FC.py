@@ -13,20 +13,20 @@ class FC():
     self.weight, self.bias = {}, {}
     with tf.name_scope('weights'):
         # declare variable
-        self.weight['en_w1'] = weight([8,4],'en_w1')
-        self.weight['en_w2'] = weight([4,2],'en_w2')
-        self.weight['en_b1'] = bias([4],'en_b1')
-        self.weight['en_b2'] = bias([2],'en_b2')
+        self.weight['fc_w1'] = weight([2,4],'fc_w1')
+        self.weight['fc_w2'] = weight([4,2],'fc_w2')
+        self.weight['fc_b1'] = bias([4],'fc_b1')
+        self.weight['fc_b2'] = bias([2],'fc_b2')
 
         # declare tensorboard variable
-        self.variable_summaries(self.weight['en_w1'], 'en_w1')
-        self.variable_summaries(self.weight['en_w2'], 'en_w2')
-        self.variable_summaries(self.weight['en_b1'], 'en_b1')
-        self.variable_summaries(self.weight['en_b2'], 'en_b2')
+        self.variable_summaries(self.weight['fc_w1'], 'fc_w1')
+        self.variable_summaries(self.weight['fc_w2'], 'fc_w2')
+        self.variable_summaries(self.weight['fc_b1'], 'fc_b1')
+        self.variable_summaries(self.weight['fc_b2'], 'fc_b2')
 
-  def encoder(self, en_input):
-    layer1 = dnn(en_input, self.weight['en_w1'],self.weight['en_b1'])
-    layer2 = dnn(layer1,   self.weight['en_w2'],self.weight['en_b2'])
+  def encoder(self, fc_input):
+    layer1 = dnn(fc_input, self.weight['fc_w1'],self.weight['fc_b1'])
+    layer2 = dnn(layer1,   self.weight['fc_w2'],self.weight['fc_b2'])
     return layer2
 
   def random_mini_batch(self, origin_input, origin_label, bs):
@@ -66,7 +66,7 @@ class FC():
     best_record = 9999
     valid_step = 1
     logs_path = 'logs/'
-    x = tf.placeholder(tf.float32,[None,8])
+    x = tf.placeholder(tf.float32,[None,2])
     y_hat = tf.placeholder(tf.float32,[None, 2])
 
     with tf.name_scope('Model'):
@@ -103,7 +103,7 @@ class FC():
                 print '...Before training...'
 
                 ##check variable
-                self._show_para(['en_w1','en_w2'])
+                self._show_para(['fc_w1','fc_w2'])
 
                 ##check load para is correct
                 valid_op, valid_cost = sess.run([de_op,loss],feed_dict={x:valid,y_hat:valid_label})
@@ -128,7 +128,7 @@ class FC():
                     save_path = self.saver.save(sess, "tmp/FC.ckpt")
                     print("############ Model saved in file: %s ###########" % save_path)
 
-                    if selftest: pass; self._show_para(['en_w1','en_w2'])
+                    if selftest: pass; self._show_para(['fc_w1','fc_w2'])
 
     print 'Total time: ', time.time()-start_time
 
@@ -143,10 +143,10 @@ class FC():
     1. share variable(learning, identity)
     -2. limited level(pass back to control)
     '''
-    data = np.array([1,2,3,4,5,6,7,8,
-                     2,2,3,4,5,6,7,8]).reshape(2,8)
+    data = np.array([1,2,
+                     2,2,]).reshape(2,2)
     data_label = np.array([1,0,0,1]).reshape(2,2)
-    valid =np.array([3,2,3,4,5,6,7,8]).reshape(1,8)
+    valid =np.array([3,2]).reshape(1,2)
     valid_label = np.array([0,1]).reshape(1,2)
 
     self.run(data.astype(np.float32),data_label,
