@@ -18,6 +18,12 @@ class FC():
         self.weight['fc_b1'] = bias([4],'fc_b1')
         self.weight['fc_b2'] = bias([2],'fc_b2')
 
+        # para list for saver
+        self.paraList = [self.weight['fc_w1'],
+                         self.weight['fc_w2'],
+                         self.weight['fc_b1'],
+                         self.weight['fc_b2']]
+
         # declare tensorboard variable
         self.variable_summaries(self.weight['fc_w1'], 'fc_w1')
         self.variable_summaries(self.weight['fc_w2'], 'fc_w2')
@@ -81,7 +87,7 @@ class FC():
     tf.scalar_summary("loss", loss)
     merged_summary_op = tf.merge_all_summaries()
 
-    self.saver = tf.train.Saver()
+    self.saver = tf.train.Saver(self.paraList)
 
     with tf.Session() as sess:
         init = tf.initialize_all_variables()

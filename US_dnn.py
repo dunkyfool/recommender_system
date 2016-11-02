@@ -27,6 +27,20 @@ class US_dnn:
         self.weight['de_b2'] = bias([6],'de_b2')
         self.weight['de_b3'] = bias([8],'de_b3')
 
+        # para list for saver
+        self.paraList = [self.weight['en_w1'],
+                         self.weight['en_w2'],
+                         self.weight['en_w3'],
+                         self.weight['en_b1'],
+                         self.weight['en_b2'],
+                         self.weight['en_b3'],
+                         #self.weight['de_w1'],
+                         #self.weight['de_w2'],
+                         #self.weight['de_w3'],
+                         self.weight['de_b1'],
+                         self.weight['de_b2'],
+                         self.weight['de_b3']]
+
         # declare tensorboard variable
         self.variable_summaries(self.weight['en_w1'], 'en_w1')
         self.variable_summaries(self.weight['en_w2'], 'en_w2')
@@ -117,7 +131,7 @@ class US_dnn:
     tf.scalar_summary("loss", loss)
     merged_summary_op = tf.merge_all_summaries()
 
-    self.saver = tf.train.Saver()
+    self.saver = tf.train.Saver(self.paraList)
 
     with tf.Session() as sess:
         init = tf.initialize_all_variables()

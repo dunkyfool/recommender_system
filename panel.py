@@ -41,8 +41,8 @@ class panel():
         loss_US = tf.reduce_sum(tf.square(tf.sub(y3, US_y_hat)))
         loss_FC = tf.reduce_sum(tf.square(tf.sub(y4, FC_y_hat)))
 
-        self.saver_US = tf.train.Saver()
-        self.saver_FC = tf.train.Saver()
+        self.saver_US = tf.train.Saver(self.US.paraList)
+        self.saver_FC = tf.train.Saver(self.FC.paraList)
 
         with tf.Session() as sess:
             init = tf.initialize_all_variables()
