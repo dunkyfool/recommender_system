@@ -42,7 +42,9 @@ class panel():
         loss_FC = tf.reduce_sum(tf.square(tf.sub(y4, FC_y_hat)))
         loss_net = tf.reduce_sum(tf.square(tf.sub(y2, FC_y_hat)))
 
-        optimizer = tf.train.RMSPropOptimizer(0.1,0.9,0.9,1e-5).minimize(loss_net)
+        #optimizer = tf.train.RMSPropOptimizer(0.1,0.9,0.9,1e-5).minimize(loss_net)
+        optimizer = tf.train.RMSPropOptimizer(0.1,0.9,0.9,1e-5).minimize(loss_net,
+                                                                    var_list=self.FC.paraList)
 
         self.saver_US = tf.train.Saver(self.US.paraList)
         self.saver_FC = tf.train.Saver(self.FC.paraList)
