@@ -86,6 +86,9 @@ class US_dnn:
         tf.scalar_summary('min/' + name, tf.reduce_min(var))
         tf.histogram_summary(name, var)
 
+  def loadpara(self,sess,saver):
+    saver.restore(sess, "tmp/US_dnn.ckpt")
+
   def run(self, data, valid, lr=0.1, ep=10, mini_bs=1, load=False, selftest=False): # ongoing
     '''
     1. connect model
@@ -124,7 +127,7 @@ class US_dnn:
             if not os.path.isfile('tmp/US_dnn.ckpt'):
                 print 'There is no saved parameter(s)! The program will assign random weight!'
             else:
-                self.saver.restore(sess, "tmp/US_dnn.ckpt")
+                self.loadpara(sess,self.saver)
                 best_record = sess.run(loss,feed_dict={x:valid,y_hat:valid})
                 print("############# Model restored. #############")
                 print 'Current BEST Record', best_record
